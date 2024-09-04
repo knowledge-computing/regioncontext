@@ -20,4 +20,4 @@ RegionContext is a Python-based project designed to analyze and cluster Points o
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/regioncontex/RegionContext.git
+   git clone https://github.com/knowledge-computing/regioncontext.git
