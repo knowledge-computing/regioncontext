@@ -86,7 +86,7 @@ class GenerateSpaBERTJSON:
             df.at[index, const.psuedo_sentence_field_name] = ps
         if self.verbose:
             print(df.head(2))
-        self.__df = df[[const.psuedo_sentence_field_name]]
+        self.__df = df[df[const.psuedo_sentence_field_name]!=''][[const.psuedo_sentence_field_name]]
         return self.__df
     
     def save_json(self, pseudo_sentence_json_file_path):
