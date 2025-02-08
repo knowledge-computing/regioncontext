@@ -1,6 +1,5 @@
 import logging
 import os, sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import pandas as pd
 import geopandas as gpd
@@ -10,8 +9,8 @@ import geohash
 import numpy as np
 import h3 
 
-from regioncontext.model_trainer._utils.helpers import geohash_to_polygon, cell_to_shapely
-from regioncontext.utils import const
+from model_trainer._utils.helpers import geohash_to_polygon, cell_to_shapely
+from utils import const
 
 class GenerateRegionEmbCSV:
     def __init__(self):

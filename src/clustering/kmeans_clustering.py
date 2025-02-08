@@ -1,15 +1,14 @@
 import logging
 import os, sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import numpy as np
 import pandas as pd
+
 from sklearn.cluster import KMeans
 from kneed import KneeLocator    
 
-
-from regioncontext.clustering._base import ClusteringBase
-from regioncontext.utils import const
+from clustering._base import ClusteringBase
+from utils import const
 
 class KMeansClustering(ClusteringBase):
     def __init__(self, verbose=False):

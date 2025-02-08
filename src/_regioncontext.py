@@ -1,17 +1,12 @@
+import os, sys
+from pathlib import Path
+import argparse
 
 from data_processor.generate_spabert_json import GenerateSpaBERTJSON
 from data_processor.generate_region_emb_csv import GenerateRegionEmbCSV
 from model_trainer.spabert_trainer import SpaBERTTrainer
 from dimension_reducer.autoencoder import AutoencoderReducer
 from clustering.kmeans_clustering import KMeansClustering
-import argparse
-import utils as ut
-import os
-import sys
-from pathlib import Path
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(parent_dir)
-
 
 class RegionContext:
     def __init__(self):

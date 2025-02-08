@@ -1,10 +1,12 @@
-import pandas as pd
-import argparse
+import os, sys
 from pathlib import Path
+import argparse
+
 import pandas as pd
 import json
-from shapely import wkt
 import scipy.spatial as scp
+
+from shapely import wkt
 
 from utils import const 
 
@@ -116,6 +118,7 @@ def main():
     csv_file_name = 'novateur-poi-sample.csv'
     csv_file_path = current_dir_path.parent / 'data' / city / csv_file_name
 
+    print(Path(current_dir_path.parent / 'data'))
     generator = GenerateSpaBERTJSON(csv_file_name=csv_file_name, data_dir_path=Path(current_dir_path.parent / 'data'))
     generator.generate_json()
     

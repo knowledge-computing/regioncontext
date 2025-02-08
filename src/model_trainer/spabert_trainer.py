@@ -1,8 +1,6 @@
 
 import logging
 import os, sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
 import glob
 import re
 from tqdm import tqdm
@@ -16,21 +14,24 @@ from transformers import BertTokenizer
 
 import pandas as pd
 import geopandas as gpd
+import numpy as np
+
 from shapely import Point
 from shapely import wkt
+
 import geohash
-import numpy as np
 import h3 
 
-from regioncontext.spabert.models.spatial_bert_model import SpatialBertConfig
-from regioncontext.spabert.models.spatial_bert_model import SpatialBertForMaskedLM
-from regioncontext.spabert.models.spatial_bert_model import SpatialBertModel
-from regioncontext.spabert.utils.common_utils import load_spatial_bert_pretrained_weights, get_spatialbert_embedding
+from spabert.models.spatial_bert_model import SpatialBertConfig
+from spabert.models.spatial_bert_model import SpatialBertForMaskedLM
+from spabert.models.spatial_bert_model import SpatialBertModel
+from spabert.utils.common_utils import load_spatial_bert_pretrained_weights, get_spatialbert_embedding
 
-from regioncontext.model_trainer._base import ModelTrainerBase
-from regioncontext.model_trainer._utils.pseudo_sentence_loader import PseudoSentenceLoader
-from regioncontext.model_trainer._utils.helpers import geohash_to_polygon, cell_to_shapely
-from regioncontext.utils import const
+from model_trainer._base import ModelTrainerBase
+from model_trainer._utils.pseudo_sentence_loader import PseudoSentenceLoader
+from model_trainer._utils.helpers import geohash_to_polygon, cell_to_shapely
+from utils import const
+
 
 class SpaBERTTrainer(ModelTrainerBase):
     def train_model(self,

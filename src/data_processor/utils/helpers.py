@@ -1,6 +1,7 @@
 import logging
 import os, sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+from pathlib import Path
+import argparse
 
 import numpy as np
 import pandas as pd
@@ -16,14 +17,9 @@ from polygon_geohasher.polygon_geohasher import polygon_to_geohashes, geohashes_
 import h3.api.basic_str as h3
 import h3pandas
 
-from regioncontext.model_trainer._utils.helpers import geohash_to_polygon, cell_to_shapely
-from regioncontext.utils import const
+from model_trainer._utils.helpers import geohash_to_polygon, cell_to_shapely
+from utils import const
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
-from pathlib import Path
-
-import argparse
 
 def read_shapefile_to_csv(input_shapefile_path, columns_to_keep, output_csv_path):
     try:
@@ -87,7 +83,6 @@ def clean_csv(input_csv_path, src_column, output_csv_path):
 
 
 def generate_aoi_region(in_csv_file_path, out_csv_file_path, region_type, region_level):
-        # Add your code here to generate the JSON
         try:
             df = pd.read_csv(in_csv_file_path)
             df[const.regioncontext_geometry_field_name] = df[const.regioncontext_geometry_field_name].apply(wkt.loads)

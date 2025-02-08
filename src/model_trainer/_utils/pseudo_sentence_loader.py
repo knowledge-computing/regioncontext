@@ -6,17 +6,16 @@
 
 
 import os, sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import numpy as np
 import json 
 
 import torch
-from transformers import RobertaTokenizer, BertTokenizer
 from torch.utils.data import Dataset
 
-from regioncontext.spabert.datasets.dataset_loader import SpatialDataset
+from transformers import RobertaTokenizer, BertTokenizer
 
+from spabert.datasets.dataset_loader import SpatialDataset
 from utils import const
 
 class PseudoSentenceLoader(SpatialDataset):

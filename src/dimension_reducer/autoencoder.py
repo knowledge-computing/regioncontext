@@ -1,17 +1,20 @@
 import os, sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
 import argparse
-import pandas as pd
 from pathlib import Path
-import torch
-from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader, TensorDataset
-from regioncontext.dimension_reducer._base import DimensionReducerBase
-from regioncontext.utils import const
 
+import pandas as pd
+
+
+from sklearn.model_selection import train_test_split
+
+import torch
+from torch.utils.data import DataLoader, TensorDataset
 import torch.nn as nn
 import torch.optim as optim
+
+from dimension_reducer._base import DimensionReducerBase
+from utils import const
+
 
 class AutoencoderReducer(DimensionReducerBase):
     def __init__(self):
