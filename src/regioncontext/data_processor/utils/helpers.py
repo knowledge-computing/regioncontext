@@ -2,27 +2,30 @@ import logging
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
+import numpy as np
 import pandas as pd
 import geopandas as gpd
-from shapely import Point
-from shapely import wkt
-import geohash
-import numpy as np
-import h3 
 
+from shapely import Point, Polygon
+from shapely import wkt, wkb
+
+import geohash
 from polygeohasher import polygeohasher
-import geopandas as gpd
 from polygon_geohasher.polygon_geohasher import polygon_to_geohashes, geohashes_to_polygon
+
+# import h3
+import h3.api.basic_str as h3
+import h3pandas
 
 
 from regioncontext.model_trainer._utils.helpers import geohash_to_polygon, cell_to_shapely
 from regioncontext.utils import const
 
-import pandas as pd
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from pathlib import Path
-import geopandas as gpd
+
+import argparse
 
 def read_shapefile_to_csv(input_shapefile_path, columns_to_keep, output_csv_path):
     try:
@@ -83,36 +86,66 @@ def clean_csv(input_csv_path, src_column, output_csv_path):
     except FileNotFoundError as e:
         print(e)
 
-def generate_aoi_region(in_csv_file_path, out_csv_file_path, region_type='geohash', region_level='10'):
+
+
+def generate_aoi_region(in_csv_file_path, out_csv_file_path, region_type, region_level):
         # Add your code here to generate the JSON
         try:
             df = pd.read_csv(in_csv_file_path)
             df[const.regioncontext_geometry_field_name] = df[const.regioncontext_geometry_field_name].apply(wkt.loads)
             gdf = gpd.GeoDataFrame(df, geometry=const.regioncontext_geometry_field_name, crs="EPSG:4326")
-            initial_df = ''
+
+            initial_df = pd.DataFrame()
+            
             if region_type == 'geohash':
                 pgh = polygeohasher.Polygeohasher(gdf)
-
-                # create a dataframe with list of geohashes for each geometry
-                initial_df = pgh.create_geohash_list(region_level,inner=False)
-                # print(initial_df.columns)
-                # initial_df = initial_df.rename(columns={'field_1': 'gid','field_2': 'osm_id','field_3': 'code','field_4': 'fclass','field_5': 'name'})
-
-                # print(initial_df.columns)
-                # make a row for each column in the geohash_list
+                initial_df = pgh.create_geohash_list(region_level, inner=False)
                 initial_df = initial_df.explode('geohash_list')
-                initial_df['geohash_list'] = initial_df['geohash_list'].astype(str)
-                initial_df['geometry'] = initial_df['geohash_list'].apply(lambda x: geohash.decode(str(x)))
-                initial_df['geometry'] = initial_df['geometry'].apply(lambda x: ', '.join(str(x).split(', ')[::-1]))
-                initial_df['geometry'] = 'Point (' + initial_df['geometry'].astype(str).str.replace('(', '').str.replace(')', '').str.replace(',', '')+')'
-            else:
-                 #todo: support for h3
-                 pass
+
+                initial_df[const.regioncontext_geometry_field_name] = initial_df['geohash_list'].apply(lambda x: geohashes_to_polygon(x))
+                
+                def geohash_to_point(gh):
+                    lat, lon = geohash.decode(gh)
+                    return Point(lon, lat)  # (lon, lat) order
+                
+                initial_df[const.regioncontext_geometry_field_name] = initial_df['geohash_list'].astype(str).apply(geohash_to_point)
+
+            elif region_type == 'h3':
+                gdf = gdf.explode(index_parts=False)
+                gdf = gdf.reset_index(drop=True)
+                initial_df = gdf.h3.polyfill(region_level, explode=True)
+                initial_df = initial_df.rename(columns={'h3_polyfill': 'h3_list'})
+                initial_df = initial_df.dropna(subset=['h3_list'], ignore_index=True)
+                initial_df[const.regioncontext_geometry_field_name] = initial_df['h3_list'].apply(lambda x: Point(*h3.h3_to_geo(x)[::-1]))
+
             initial_df.to_csv(out_csv_file_path, index=False)
             
         except Exception as e:
             logging.error(f"Error generating grid data: {e}")
         return None
+
+# def preprocess_planetsense_csv(in_csv_file_path, out_csv_file_path):
+
+#     df = pd.read_csv(in_csv_file_path)
+
+#     columns = ['ps__category_level0', 'ps__category_level1', 'ps__category_level2', 'occ_cls', 'prim_occ', 'ps__osm_category']
+
+#     for col in columns:
+#         df[col] = df[col].astype(str).apply(lambda x: x.encode('ascii', 'ignore').strip().decode('ascii') if x != 'nan' else np.nan).str.replace('_',' ')
+
+#     df['ps__osm_category'] = df['ps__osm_category'].str.replace(';',' ').str.replace('=',' ').str.replace('_',' ')
+
+#     df['type'] = df['ps__category_level0'] + " " + df['ps__category_level1'] + " " + df['ps__category_level2'] + " " + df['occ_cls'] + " " + df['prim_occ'] + " " + df['ps__osm_category']
+#     df['type'] = df['type'].str.lower()
+
+#     df = df[df['type'].notnull()]
+
+#     df = df.reset_index(drop=True)
+#     df[const.regioncontext_geometry_field_name] = df.wkb_geometry.apply(lambda x: wkb.loads(x, hex=True).wkt)
+#     df[const.poi_aoi_field_name] = 'poi'
+#     df[['ogc_fid','type',const.regioncontext_geometry_field_name,const.poi_aoi_field_name]].to_csv(out_csv_file_path, index=False)
+
+
         
 def main():
     # Define the input shapefile path
@@ -130,9 +163,18 @@ def main():
     # read_shapefile_to_csv(input_shapefile_path, columns_to_keep, output_csv_path)
     # #clean_csv(input_shapefile_path, "ZoneDist1", output_csv_path)
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input_csv_path', type=str, required=True)
+    parser.add_argument('--output_csv_path', type=str, required=True)
+    parser.add_argument('--region_type', choices=['geohash', 'h3'], help='geohash | h3', required=True)
+    parser.add_argument('--region_level', type=int, required=True)
+    
+    args = parser.parse_args()
+    print('\n')
+    print(args)
+    print('\n')
 
-    generate_aoi_region(in_csv_file_path='/home/yaoyi/projects/RegionContext/data/nyc/sample/landuse-sample.csv', 
-                        out_csv_file_path='/home/yaoyi/projects/RegionContext/data/nyc/sample/aoi-landuse-sample.csv', region_type='geohash', region_level=8)
+    generate_aoi_region(in_csv_file_path=args.input_csv_path, out_csv_file_path=args.output_csv_path, region_type=args.region_type, region_level=args.region_level)
 
 
 if __name__ == "__main__":
