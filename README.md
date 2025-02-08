@@ -11,13 +11,12 @@ RegionContext is a Python-based project designed to analyze and cluster Points o
 
 ## Getting Started
 
-### Prerequisites
+```bash
+   conda create --name=regioncontext python=3.10
+   conda activate regioncontext
 
-- Python 3.6 or higher
-- Required Python packages: `numpy`, `pandas`, `scikit-learn`, `tensorflow`, `keras`
-
-### Installation
-
-1. Clone the repository:
-   ```bash
    git clone https://github.com/knowledge-computing/regioncontext.git
+   cd regioncontext
+   pip install -r requirements.txt
+
+   export PYTHONPATH=$PYTHONPATH:./src
