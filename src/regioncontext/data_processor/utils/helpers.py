@@ -13,10 +13,8 @@ import geohash
 from polygeohasher import polygeohasher
 from polygon_geohasher.polygon_geohasher import polygon_to_geohashes, geohashes_to_polygon
 
-# import h3
 import h3.api.basic_str as h3
 import h3pandas
-
 
 from regioncontext.model_trainer._utils.helpers import geohash_to_polygon, cell_to_shapely
 from regioncontext.utils import const
@@ -123,29 +121,6 @@ def generate_aoi_region(in_csv_file_path, out_csv_file_path, region_type, region
         except Exception as e:
             logging.error(f"Error generating grid data: {e}")
         return None
-
-# def preprocess_planetsense_csv(in_csv_file_path, out_csv_file_path):
-
-#     df = pd.read_csv(in_csv_file_path)
-
-#     columns = ['ps__category_level0', 'ps__category_level1', 'ps__category_level2', 'occ_cls', 'prim_occ', 'ps__osm_category']
-
-#     for col in columns:
-#         df[col] = df[col].astype(str).apply(lambda x: x.encode('ascii', 'ignore').strip().decode('ascii') if x != 'nan' else np.nan).str.replace('_',' ')
-
-#     df['ps__osm_category'] = df['ps__osm_category'].str.replace(';',' ').str.replace('=',' ').str.replace('_',' ')
-
-#     df['type'] = df['ps__category_level0'] + " " + df['ps__category_level1'] + " " + df['ps__category_level2'] + " " + df['occ_cls'] + " " + df['prim_occ'] + " " + df['ps__osm_category']
-#     df['type'] = df['type'].str.lower()
-
-#     df = df[df['type'].notnull()]
-
-#     df = df.reset_index(drop=True)
-#     df[const.regioncontext_geometry_field_name] = df.wkb_geometry.apply(lambda x: wkb.loads(x, hex=True).wkt)
-#     df[const.poi_aoi_field_name] = 'poi'
-#     df[['ogc_fid','type',const.regioncontext_geometry_field_name,const.poi_aoi_field_name]].to_csv(out_csv_file_path, index=False)
-
-
         
 def main():
     # Define the input shapefile path
