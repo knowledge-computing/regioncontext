@@ -34,8 +34,8 @@ class GenerateSpaBERTJSON:
         df = pd.read_csv(self.csv_file_path)
         df[const.aggregated_field_name]=''
         for field_name in self.context_field_names:
-            df[field_name] = df[field_name].apply(lambda x: str(x).lower().encode('ascii', 'ignore').strip().decode('ascii'))
-            df[const.aggregated_field_name] = df[const.aggregated_field_name]+df[field_name] + ':'
+            df[field_name] = df[field_name].apply(lambda x: str(x).lower().encode('ascii', 'ignore').strip().decode('ascii') if x != 'nan' else np.nan)
+            df[const.aggregated_field_name] = df[const.aggregated_field_name] + df[field_name] + ':'
         df[const.aggregated_field_name] = df[const.aggregated_field_name].apply(lambda x: x[:-1])
 
         df = df[df[const.aggregated_field_name].notnull()]
