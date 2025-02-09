@@ -1,22 +1,24 @@
 import logging
 import os, sys
+import ast
 
+import numpy as np
 import pandas as pd
 import geopandas as gpd
-from shapely import Point
-from shapely import wkt
+
+from shapely import Point, wkt
 import geohash
-import numpy as np
 import h3 
 
 from model_trainer._utils.helpers import geohash_to_polygon, cell_to_shapely
 from utils import const
 
+
 class GenerateRegionEmbCSV:
     def __init__(self):
         pass
 
-    def fir_tranform(self, in_csv_file_path, out_csv_file_path, region_type='h3', region_level='10'):
+    def fit_tranform(self, in_csv_file_path, out_csv_file_path, region_type='h3', region_level=10):
         # Add your code here to generate the JSON
         try:
             self.in_csv_file_path = in_csv_file_path
@@ -26,7 +28,10 @@ class GenerateRegionEmbCSV:
             self.grouped_df = None
 
             df = pd.read_csv(self.in_csv_file_path)
+            df[const.regioncontext_geometry_field_name] = df[const.regioncontext_geometry_field_name].apply(wkt.loads)
+
             self.gdf = gpd.GeoDataFrame(df, geometry=const.regioncontext_geometry_field_name, crs="EPSG:4326")
+            self.gdf[const.spabert_emb_field_name] = self.gdf[const.spabert_emb_field_name].apply(lambda x: np.array(ast.literal_eval(x)))
 
             if self.region_type == 'geohash':
                 self.gdf[self.region_type] = self.gdf[const.regioncontext_geometry_field_name].apply(lambda x: geohash.encode(x.y, x.x, precision=self.region_level))
@@ -38,6 +43,7 @@ class GenerateRegionEmbCSV:
                 self.grouped_df = self.gdf.groupby(self.region_type)[const.spabert_emb_field_name].apply(lambda x: np.mean(np.vstack(x), axis=0)).reset_index()
                 self.grouped_df[const.regioncontext_geometry_field_name] = self.grouped_df[self.region_type].apply(lambda x: cell_to_shapely(x)) 
 
+            self.grouped_df[const.spabert_emb_field_name] = self.grouped_df[const.spabert_emb_field_name].apply(lambda x: x.tolist())
             self.grouped_df.to_csv(self.out_csv_file_path, index=False)
             return self.grouped_df
 
