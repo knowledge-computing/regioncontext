@@ -13,7 +13,7 @@ class RegionContext:
     def __init__(self):
         pass
 
-    def fit_transform(self, csv_file_path, context_field_names, geometry_field_name, num_neighbors, search_radius_meters):
+    def fit_transform(self, csv_file_path, context_field_names, geometry_field_name, num_neighbors, search_radius_meters, processed_aoi_csv_file_path):
         self.verbose = True
         parent_dir = Path(csv_file_path).resolve().parent
         file_name = Path(csv_file_path).resolve().stem
@@ -32,7 +32,8 @@ class RegionContext:
                                                  geometry_field_name=geometry_field_name,
                                                  num_neighbors=num_neighbors,
                                                  search_radius_meters=search_radius_meters,
-                                                 pseudo_sentence_json_file_path=pseudo_sentence_json_file_path)
+                                                 pseudo_sentence_json_file_path=pseudo_sentence_json_file_path,
+                                                 processed_aoi_csv_file_path=processed_aoi_csv_file_path)
         # Train the SpaBERT model
         spabert_trainer = SpaBERTTrainer()
         spabert_trainer.train_model(json_file_path=pseudo_sentence_json_file_path,
@@ -81,7 +82,8 @@ class RegionContext:
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_csv_path', type=str)
+    parser.add_argument('--input_poi_csv_path', type=str, required=True)
+    parser.add_argument('--input_aoi_csv_path', type=str)
     args = parser.parse_args()
     print('\n')
     print(args)
@@ -92,11 +94,12 @@ def main():
 
     # Call the fit_transform method
     region_context.fit_transform(
-        csv_file_path=args.input_csv_path,
-        context_field_names=['ps__category_level1', 'ps__category_level2', 'ta1_usage_descriptors'],
+        csv_file_path=args.input_poi_csv_path,
+        context_field_names=['ps__category_level0','ps__category_level1', 'ps__category_level2', 'occ_cls', 'prim_occ', 'ps__osm_category'],
         geometry_field_name=const.regioncontext_geometry_field_name,
         num_neighbors=const.neighbor_number, 
-        search_radius_meters=const.neighbor_search_radius_meter)
+        search_radius_meters=const.neighbor_search_radius_meter,
+        processed_aoi_csv_file_path=args.input_aoi_csv_path)
 
 
 if __name__ == "__main__":

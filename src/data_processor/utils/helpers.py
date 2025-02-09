@@ -82,10 +82,21 @@ def clean_csv(input_csv_path, src_column, output_csv_path):
 
 
 
-def generate_aoi_region(in_csv_file_path, out_csv_file_path, region_type, region_level):
+def generate_aoi_region(in_csv_file_path, out_csv_file_path, context_field_names, region_type, region_level):
         try:
             df = pd.read_csv(in_csv_file_path)
             df[const.regioncontext_geometry_field_name] = df[const.regioncontext_geometry_field_name].apply(wkt.loads)
+            
+            df[const.aggregated_field_name]=''
+            for field_name in context_field_names:
+                df[field_name] = df[field_name].astype(str).apply(lambda x: x.lower().encode('ascii', 'ignore').strip().decode('ascii') if x != 'nan' else np.nan)
+                df[const.aggregated_field_name] = df[const.aggregated_field_name] + df[field_name] + ':'
+            
+            df = df[df[const.aggregated_field_name].notnull()]
+            df[const.aggregated_field_name] = df[const.aggregated_field_name].apply(lambda x: x[:-1])
+            
+            df = df.reset_index(drop=True)
+
             gdf = gpd.GeoDataFrame(df, geometry=const.regioncontext_geometry_field_name, crs="EPSG:4326")
 
             initial_df = pd.DataFrame()
@@ -111,6 +122,7 @@ def generate_aoi_region(in_csv_file_path, out_csv_file_path, region_type, region
                 initial_df = initial_df.dropna(subset=['h3_list'], ignore_index=True)
                 initial_df[const.regioncontext_geometry_field_name] = initial_df['h3_list'].apply(lambda x: Point(*h3.h3_to_geo(x)[::-1]))
 
+            initial_df[const.poi_aoi_field_name] = const.aoi_field_value
             initial_df.to_csv(out_csv_file_path, index=False)
             
         except Exception as e:
@@ -136,15 +148,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_csv_path', type=str, required=True)
     parser.add_argument('--output_csv_path', type=str, required=True)
-    parser.add_argument('--region_type', choices=['geohash', 'h3'], help='geohash | h3', required=True)
-    parser.add_argument('--region_level', type=int, required=True)
     
     args = parser.parse_args()
     print('\n')
     print(args)
     print('\n')
 
-    generate_aoi_region(in_csv_file_path=args.input_csv_path, out_csv_file_path=args.output_csv_path, region_type=args.region_type, region_level=args.region_level)
+    generate_aoi_region(in_csv_file_path=args.input_csv_path, out_csv_file_path=args.output_csv_path, context_field_names = ['subtype','class'], region_type=const.regioncontext_region_type, region_level=const.regioncontext_region_level)
 
 
 if __name__ == "__main__":

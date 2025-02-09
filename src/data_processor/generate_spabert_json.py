@@ -2,6 +2,7 @@ import os, sys
 from pathlib import Path
 import argparse
 
+import numpy as np
 import pandas as pd
 import json
 import scipy.spatial as scp
@@ -19,30 +20,38 @@ class GenerateSpaBERTJSON:
 
     def fit_transform(self, csv_file_path, context_field_names, geometry_field_name,
             num_neighbors, 
-            search_radius_meters, pseudo_sentence_json_file_path):
+            search_radius_meters, pseudo_sentence_json_file_path, processed_aoi_csv_file_path):
         self.generate_json(csv_file_path, context_field_names, geometry_field_name,
             num_neighbors, 
-            search_radius_meters)
+            search_radius_meters, processed_aoi_csv_file_path)
         self.save_json(pseudo_sentence_json_file_path)
 
     def generate_json(self, csv_file_path, context_field_names, geometry_field_name,
             num_neighbors=100, 
-            search_radius_meters=100 ) -> pd.DataFrame:
+            search_radius_meters=100, processed_aoi_csv_file_path=None) -> pd.DataFrame:
+        
         self.csv_file_path = csv_file_path
         self.context_field_names = context_field_names
         self.geometry_field_name = geometry_field_name
         self.num_neighbors = num_neighbors
         self.search_radius_meters = search_radius_meters
+        self.processed_aoi_csv_file_path = processed_aoi_csv_file_path
+
         df = pd.read_csv(self.csv_file_path)
         df[const.aggregated_field_name]=''
         for field_name in self.context_field_names:
-            df[field_name] = df[field_name].apply(lambda x: str(x).lower().encode('ascii', 'ignore').strip().decode('ascii') if x != 'nan' else np.nan)
+            df[field_name] = df[field_name].astype(str).apply(lambda x: x.lower().encode('ascii', 'ignore').strip().decode('ascii') if x != 'nan' else np.nan)
             df[const.aggregated_field_name] = df[const.aggregated_field_name] + df[field_name] + ':'
-        df[const.aggregated_field_name] = df[const.aggregated_field_name].apply(lambda x: x[:-1])
 
         df = df[df[const.aggregated_field_name].notnull()]
+        df[const.aggregated_field_name] = df[const.aggregated_field_name].apply(lambda x: x[:-1])
+        
         df = df[df[self.geometry_field_name].notnull()]
         df = df.reset_index(drop=True)
+
+        if self.processed_aoi_csv_file_path is not None:
+            building_df = pd.read_csv(self.processed_aoi_csv_file_path)
+            df = pd.concat([df[[const.aggregated_field_name, self.geometry_field_name]], building_df[[const.aggregated_field_name, self.geometry_field_name, const.poi_aoi_field_name]]], axis=0, ignore_index=True, sort=False)
 
         df[self.geometry_field_name] = df[self.geometry_field_name].apply(wkt.loads)
         df[const.x_y_field_name] = df[self.geometry_field_name].apply(lambda x: [x.y, x.x])
@@ -99,30 +108,3 @@ class GenerateSpaBERTJSON:
                         continue
                 out_f.write(json.dumps(row[const.psuedo_sentence_field_name]))
                 out_f.write('\n')
-
-def main():
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--input_csv_path', type=str)
-    parser.add_argument('--num_neighbors', type=int)
-    parser.add_argument('--search_radius_meters', type=int)
-
-    args = parser.parse_args()
-    print('\n')
-    print(args)
-    print('\n')
-
-    current_file_path = Path(__file__).resolve()
-    current_dir_path = current_file_path.parent
-    city = 'irbid'
-    csv_file_name = 'novateur-poi-sample.csv'
-    csv_file_path = current_dir_path.parent / 'data' / city / csv_file_name
-
-    print(Path(current_dir_path.parent / 'data'))
-    generator = GenerateSpaBERTJSON(csv_file_name=csv_file_name, data_dir_path=Path(current_dir_path.parent / 'data'))
-    generator.generate_json()
-    
-    generator.save_json()
-
-if __name__ == '__main__':
-    main()
