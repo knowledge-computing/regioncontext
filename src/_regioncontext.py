@@ -25,6 +25,15 @@ class RegionContext:
             f"{file_name}_pseudo_sentence_v2_nn{num_neighbors}_sdm{search_radius_meters}.json"
         model_weights_dir = data_dir / "model_weights"
 
+        poi_embedding_csv_file_path = data_dir / \
+            f"{Path(csv_file_path).resolve().stem}_emb_.csv"
+        
+        region_embedding_csv_file_path = data_dir / \
+            f"{Path(csv_file_path).resolve().stem}_emb_{const.regioncontext_region_type}.{const.regioncontext_region_level}.csv"
+        
+        region_embedding_enc_csv_file_path = data_dir / \
+            f"{Path(csv_file_path).resolve().stem}_emb_{const.regioncontext_region_type}.{const.regioncontext_region_level}_enc.csv"
+
         # Generate the JSON file
         generate_spabert_json = GenerateSpaBERTJSON()
         generate_spabert_json.fit_transform(csv_file_path=csv_file_path,
@@ -41,24 +50,20 @@ class RegionContext:
                                     epochs=1, verbose=self.verbose)
                                     
         # Predict the embeddings
-        poi_embedding_csv_file_path = data_dir / \
-            f"{Path(csv_file_path).resolve().stem}_emb_.csv"
         spabert_trainer.predict(json_file_path=pseudo_sentence_json_file_path,
                                 model_save_dir=model_weights_dir,
                                 csv_file_path=poi_embedding_csv_file_path, verbose=True)
 
         # Generate the region embeddings
-        region_enc_embedding_csv_file_path = data_dir / \
-            f"{Path(csv_file_path).resolve().stem}_emb_enc_{const.regioncontext_region_type}.{const.regioncontext_region_level}.csv"
         generate_region_emb_csv = GenerateRegionEmbCSV()
-        generate_region_emb_csv.fir_tranform(in_csv_file_path=poi_embedding_csv_file_path,
-                                             out_csv_file_path=region_enc_embedding_csv_file_path,
+        generate_region_emb_csv.fit_tranform(in_csv_file_path=poi_embedding_csv_file_path,
+                                             out_csv_file_path=region_embedding_csv_file_path,
                                              region_type=const.regioncontext_region_type, region_level=const.regioncontext_region_level)
 
         # Dimension reduction
         autoencoder_reducer = AutoencoderReducer()
-        autoencoder_reducer.fit_transform(csv_file_path=poi_embedding_csv_file_path,
-                                          enc_csv_file_path=region_enc_embedding_csv_file_path,
+        autoencoder_reducer.fit_transform(in_csv_file_path=region_embedding_csv_file_path,
+                                          out_csv_file_path=region_embedding_enc_csv_file_path,
                                           epoch=300)
 
         # Clustering
@@ -67,15 +72,17 @@ class RegionContext:
         cluster_enc_embedding_csv_file_path = ''
         if self.min_component != self.max_component:
             cluster_enc_embedding_csv_file_path = data_dir / \
-                f"{Path(csv_file_path).resolve().stem}_emb_enc_{self.region_type}.{self.region_level}_opt.csv"
+                f"{Path(csv_file_path).resolve().stem}_emb_{const.regioncontext_region_type}.{const.regioncontext_region_level}_enc_opt.csv"
         else:
             cluster_enc_embedding_csv_file_path = data_dir / \
-                f"{Path(csv_file_path).resolve().stem}_emb_enc_{self.region_type}.{self.region_level}_{self.max_component}.csv"
+                f"{Path(csv_file_path).resolve().stem}_emb_{const.regioncontext_region_type}.{const.regioncontext_region_level}_enc_{self.max_component}.csv"
 
         kmeans_clustering = KMeansClustering()
-        kmeans_clustering.fit_predict(csv_file_path=region_enc_embedding_csv_file_path,
+        kmeans_clustering.fit_predict(input_csv_file_path=region_embedding_enc_csv_file_path,
                                       output_csv_file_path=cluster_enc_embedding_csv_file_path,
                                       min_component=self.min_component, max_component=self.max_component, clustering_by_group=False, min_required_data_points=10, verbose=True)
+        
+        
         pass
 
 

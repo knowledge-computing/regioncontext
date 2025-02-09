@@ -3,6 +3,7 @@ import os, sys
 
 import numpy as np
 import pandas as pd
+import ast
 
 from sklearn.cluster import KMeans
 from kneed import KneeLocator    
@@ -14,9 +15,9 @@ class KMeansClustering(ClusteringBase):
     def __init__(self, verbose=False):
         super().__init__(verbose)
 
-    def fit_predict(self, csv_file_path, output_csv_file_path, min_component, max_component, clustering_by_group=False, min_required_data_points = 10, verbose=False):
+    def fit_predict(self, input_csv_file_path, output_csv_file_path, min_component, max_component, clustering_by_group=False, min_required_data_points = 10, verbose=False):
         try:
-            self.input_csv_file_path = csv_file_path
+            self.input_csv_file_path = input_csv_file_path
             self.output_csv_file_path = output_csv_file_path
             # Delete the output file if it exists
             if os.path.exists(output_csv_file_path):
@@ -52,7 +53,7 @@ class KMeansClustering(ClusteringBase):
                     
                 if len(group) < self.min_required_data_points:
                         continue            
-                emb = group[const.spabert_emb_enc_field_name].apply(lambda x: [float(value) for value in x.strip('[]').split( )])
+                emb = group[const.spabert_emb_enc_field_name].apply(lambda x: ast.literal_eval(x))
                 emb_array = np.array(emb.tolist())
 
                 ssd = []

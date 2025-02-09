@@ -18,13 +18,13 @@ class AutoencoderReducer(DimensionReducerBase):
     def __init__(self):
         super(AutoencoderReducer, self).__init__()
 
-    def fit_transform(self, csv_file_path, enc_csv_file_path, dimension=64, epoch = 300):
-        self.csv_file_path = csv_file_path
-        self.enc_csv_file_path = enc_csv_file_path
+    def fit_transform(self, in_csv_file_path, out_csv_file_path, dimension=64, epoch = 300):
+        self.in_csv_file_path = in_csv_file_path
+        self.out_csv_file_path = out_csv_file_path
         self.dimension = dimension 
         self.epoch = epoch
 
-        self.df = pd.read_csv(self.csv_file_path)
+        self.df = pd.read_csv(self.in_csv_file_path)
     
         embdf = self.df[const.spabert_emb_field_name].apply(lambda x: ast.literal_eval(x))
         embdf = pd.DataFrame(embdf.tolist())
@@ -45,7 +45,7 @@ class AutoencoderReducer(DimensionReducerBase):
         encoded_data = encoded_data.cpu()
 
         self.df[const.spabert_emb_enc_field_name] = encoded_data.detach().numpy().tolist()
-        self.df.to_csv(self.enc_csv_file_path, index=False)
+        self.df.to_csv(self.out_csv_file_path, index=False)
         return self.df
 
 
