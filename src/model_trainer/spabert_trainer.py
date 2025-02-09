@@ -5,26 +5,18 @@ import glob
 import re
 from tqdm import tqdm
 
+import pandas as pd
+import geopandas as gpd
+
+from shapely import Point, wkt
+
 import torch
 from torch.utils.data import DataLoader
 
-from transformers import AdamW
+from transformers import AdamW, BertTokenizer
 from transformers.models.bert.modeling_bert import BertForMaskedLM
-from transformers import BertTokenizer
 
-import pandas as pd
-import geopandas as gpd
-import numpy as np
-
-from shapely import Point
-from shapely import wkt
-
-import geohash
-import h3 
-
-from spabert.models.spatial_bert_model import SpatialBertConfig
-from spabert.models.spatial_bert_model import SpatialBertForMaskedLM
-from spabert.models.spatial_bert_model import SpatialBertModel
+from spabert.models.spatial_bert_model import SpatialBertConfig, SpatialBertForMaskedLM, SpatialBertModel
 from spabert.utils.common_utils import load_spatial_bert_pretrained_weights, get_spatialbert_embedding
 
 from model_trainer._base import ModelTrainerBase
@@ -212,7 +204,7 @@ class SpaBERTTrainer(ModelTrainerBase):
                 entity_ids.append(entity['pivot_id'])
                 entity_context.append(entity['pivot_name'])
                 entity_coords.append(Point(entity['pivot_pos'][::-1]))
-                entity_emb.append(spabert_emb)
+                entity_emb.append(spabert_emb.tolist())
                 
             df = pd.DataFrame({const.regioncontext_id_field_name: entity_ids, const.regioncontext_context_field_name: entity_context, const.regioncontext_geometry_field_name: entity_coords, const.spabert_emb_field_name: entity_emb})
             self.gdf = gpd.GeoDataFrame(df, geometry=const.regioncontext_geometry_field_name, crs="EPSG:4326")
