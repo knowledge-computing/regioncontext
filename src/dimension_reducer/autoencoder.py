@@ -3,9 +3,7 @@ import argparse
 from pathlib import Path
 
 import pandas as pd
-
-
-from sklearn.model_selection import train_test_split
+import ast
 
 import torch
 from torch.utils.data import DataLoader, TensorDataset
@@ -28,7 +26,7 @@ class AutoencoderReducer(DimensionReducerBase):
 
         self.df = pd.read_csv(self.csv_file_path)
     
-        embdf = self.df[const.spabert_emb_field_name].apply(lambda x: list(map(float, x.strip('[]').split())))
+        embdf = self.df[const.spabert_emb_field_name].apply(lambda x: ast.literal_eval(x))
         embdf = pd.DataFrame(embdf.tolist())
 
         x_data = torch.tensor(embdf.values, dtype=torch.float32)
@@ -46,15 +44,11 @@ class AutoencoderReducer(DimensionReducerBase):
         encoded_data = autoencoder.encode(x_data_tensor)
         encoded_data = encoded_data.cpu()
 
-        encoded_df = pd.DataFrame(encoded_data.detach().numpy())
-        self.df[const.spabert_emb_enc_field_name] =''
-        self.df[const.spabert_emb_enc_field_name] = encoded_df.apply(lambda x: '[' + ' '.join(x.astype(str)) + ']', axis=1)
+        self.df[const.spabert_emb_enc_field_name] = encoded_data.detach().numpy().tolist()
         self.df.to_csv(self.enc_csv_file_path, index=False)
         return self.df
 
-def main():
-    pass
- # Define the autoencoder model
+
 class Autoencoder(nn.Module):
     def __init__(self, in_shape, enc_shape):
         super(Autoencoder, self).__init__()
@@ -79,10 +73,12 @@ class Autoencoder(nn.Module):
             nn.Dropout(0.2),
             nn.Linear(128, in_shape)
         )
+
     def forward(self, x):
         encoded = self.encode(x)
         decoded = self.decode(encoded)
         return decoded
+
 
 def train(model, criterion, optimizer, n_epochs, train_loader, device):
     model.train()
@@ -97,5 +93,3 @@ def train(model, criterion, optimizer, n_epochs, train_loader, device):
             optimizer.step()
             total_loss += loss.item()
         print(f"Epoch [{epoch+1}/{n_epochs}], Loss: {total_loss/len(train_loader):.4f}")
-if __name__ == "__main__":
-    main()

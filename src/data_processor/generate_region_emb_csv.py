@@ -21,6 +21,7 @@ class GenerateRegionEmbCSV:
         try:
             self.in_csv_file_path = in_csv_file_path
             self.out_csv_file_path = out_csv_file_path
+            self.region_type = region_type
             self.region_level = region_level
             self.grouped_df = None
 
