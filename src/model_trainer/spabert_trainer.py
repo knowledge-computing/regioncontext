@@ -21,11 +21,15 @@ from spabert.utils.common_utils import load_spatial_bert_pretrained_weights, get
 
 from model_trainer._base import ModelTrainerBase
 from model_trainer._utils.pseudo_sentence_loader import PseudoSentenceLoader
-from model_trainer._utils.helpers import geohash_to_polygon, cell_to_shapely
 from utils import const
 
 
 class SpaBERTTrainer(ModelTrainerBase):
+    def __init__(self):
+        self.max_token_len = 512
+        self.distance_norm_factor = 0.0001
+        self.spatial_dist_fill = 100
+
     def train_model(self,
                     json_file_path,
                     model_save_dir,
@@ -35,9 +39,6 @@ class SpaBERTTrainer(ModelTrainerBase):
                     epochs=10,
                     lr = 5e-5,
                     save_interval=2000,
-                    max_token_len=200,
-                    distance_norm_factor=0.0001,
-                    spatial_dist_fill=20,
                     with_type = False,
                     sep_between_neighbors = False,
                     freeze_backbone= False,
@@ -52,9 +53,6 @@ class SpaBERTTrainer(ModelTrainerBase):
             self.epochs = epochs
             self.lr = lr
             self.save_interval = save_interval
-            self.max_token_len = max_token_len
-            self.distance_norm_factor = distance_norm_factor
-            self.spatial_dist_fill = spatial_dist_fill
             self.with_type = with_type
             self.sep_between_neighbors = sep_between_neighbors
             self.freeze_backbone = freeze_backbone
@@ -186,11 +184,11 @@ class SpaBERTTrainer(ModelTrainerBase):
             tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
             json_dataset = PseudoSentenceLoader(
-                data_file_path = self.json_file_path,
-                tokenizer = tokenizer,
-                max_token_len = 512, 
-                distance_norm_factor = 0.0001, 
-                spatial_dist_fill=100
+                data_file_path=self.json_file_path,
+                tokenizer=tokenizer,
+                max_token_len=self.max_token_len,
+                distance_norm_factor=self.distance_norm_factor,
+                spatial_dist_fill=self.spatial_dist_fill
             )
 
             entity_ids = []
